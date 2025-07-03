@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Delete Data</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      display: block;
+      margin-bottom: 10px;
+    }
+    select {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 20px;
+      font-size: 14px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+    }
+    button {
+      background-color: #e53935;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 16px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #c62828;
+    }
+  </style>
+</head>
+<body>
+  <h1>Delete Data</h1>
+  <form id="delete-form">
+    <label for="api-id">Select Data to Delete:</label>
+    <select id="api-id" name="api-id">
+      <option value="">-- Select --</option>
+    </select>
+    <button type="submit">Delete</button>
+  </form>
+
+  <script>
+    // Load dropdown
+    fetch('/apis')
+      .then(response => response.json())
+      .then(data => {
+        const select = document.getElementById('api-id');
+        data.apis.forEach(api => {
+          const option = document.createElement('option');
+          option.value = api._id;
+          option.textContent = api.name;
+          select.appendChild(option);
+        });
+      });
+
+    async function getJwt() {
+      if (sessionStorage.jwt) return sessionStorage.jwt;
+      const res = await fetch('/login', { method: 'POST' });
+      const data = await res.json();
+      sessionStorage.jwt = data.access_token;
+      return data.access_token;
+    }
+
+    // Handle deletion
+    document.getElementById('delete-form').addEventListener('submit', async function (event) {
+      event.preventDefault();
+      const id = document.getElementById('api-id').value;
+      if (!id) return alert('Please select a record to delete.');
+
+      const token = await getJwt();
+
+      fetch('/api/v1/items/' + id, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+        .then(response => {
+          if (!response.ok) throw new Error();
+          return response.json();
+        })
+        .then(data => {
+          alert('Deleted successfully');
+          location.reload();
+        })
+        .catch(() => alert('Failed to delete data'));
+    });
+  </script>
+</body>
+</html>

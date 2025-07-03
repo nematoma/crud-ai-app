@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>DATA Manager</title>
+  <style>
+    body{font-family:Arial,Helvetica,sans-serif;background:#f0f0f0;margin:20px}
+    h1{text-align:center;color:#333}
+    form{max-width:400px;margin:0 auto;background:#fff;padding:20px;border-radius:8px;box-shadow:0 0 10px rgba(0,0,0,.1)}
+    label{display:block;font-weight:bold;margin-bottom:8px}
+    input,textarea{width:100%;padding:8px;margin-bottom:15px;border:1px solid #ccc;border-radius:4px;box-sizing:border-box;font-size:14px}
+    textarea{resize:vertical}
+    button{background:#4caf50;color:#fff;border:none;border-radius:4px;padding:10px 20px;font-size:16px;cursor:pointer;margin-right:10px}
+    button:hover{background:#45a049}
+    .btn-container{text-align:center;margin-top:20px}
+  </style>
+</head>
+<body>
+  <h1>DATA Manager</h1>
+
+  <form id="create-form">
+    <label for="name">Data name:</label>
+    <input id="name" required />
+    <label for="description">Description:</label>
+    <textarea id="description" rows="4" required></textarea>
+    <button type="submit">Create Data</button>
+  </form>
+
+  <div class="btn-container">
+    <button onclick="location.href='/update'">Update Data</button>
+    <button onclick="location.href='/delete'">Delete Data</button>
+  </div>
+
+  <script>
+    /* ─────────────────────────────────────────────── */
+    /*  JWT helper: fetch once, then reuse            */
+    /* ─────────────────────────────────────────────── */
+    async function getJwt () {
+      if (sessionStorage.jwt) return sessionStorage.jwt;        // cached
+      const res  = await fetch('/login', { method: 'POST' });
+      if (!res.ok) throw new Error('Login failed');
+      const { access_token } = await res.json();
+      sessionStorage.jwt = access_token;
+      return access_token;
+    }
+
+    /* ─────────────────────────────────────────────── */
+    /*  Create‑data form handler                      */
+    /* ─────────────────────────────────────────────── */
+    document.getElementById('create-form').addEventListener('submit', async e => {
+      e.preventDefault();
+      const body = {
+        name:        document.getElementById('name').value.trim(),
+        description: document.getElementById('description').value.trim()
+      };
+      try {
+        const token = await getJwt();
+        const res   = await fetch('/api/v1/items', {
+          method : 'POST',
+          headers: {
+            'Content-Type' : 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body   : JSON.stringify(body)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        alert('Data created successfully');
+        e.target.reset();
+      } catch (err) {
+        console.error(err);
+        alert('Failed to create Data');
+      }
+    });
+  </script>
+</body>
+</html>

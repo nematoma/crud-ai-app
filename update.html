@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Update API</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f0f0f0;
+      margin: 20px;
+      padding: 0;
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    form {
+      max-width: 400px;
+      margin: 0 auto;
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    label {
+      font-weight: bold;
+      margin-bottom: 8px;
+      display: block;
+    }
+    select, input, textarea {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    textarea {
+      resize: vertical;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-right: 10px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #summary-box {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #eef;
+      border: 1px solid #ccd;
+      border-radius: 4px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Update API</h1>
+  <form id="update-api-form">
+    <label for="api-id">Select Data to Update:</label>
+    <select id="api-id" name="api-id">
+      <option value="">Select...</option>
+    </select><br><br>
+
+    <label for="name">New Data Name:</label>
+    <input type="text" id="name" name="name" required><br><br>
+
+    <label for="description">New Description:</label><br>
+    <textarea id="description" name="description" rows="4" required></textarea><br><br>
+
+    <button type="submit">Update Data</button>
+    <button type="button" id="summarize-btn">Summarize with AI</button>
+  </form>
+
+  <div id="summary-box">
+    <strong>AI Summary:</strong>
+    <p id="summary-text"></p>
+  </div>
+
+  <script>
+    // Load dropdown
+    fetch('/apis')
+      .then(response => response.json())
+      .then(data => {
+        const select = document.getElementById('api-id');
+        data.apis.forEach(api => {
+          const option = document.createElement('option');
+          option.value = api._id;
+          option.textContent = api.name;
+          select.appendChild(option);
+        });
+      });
+
+    async function getJwt() {
+      if (sessionStorage.jwt) return sessionStorage.jwt;
+      const res = await fetch('/login', { method: 'POST' });
+      const data = await res.json();
+      sessionStorage.jwt = data.access_token;
+      return data.access_token;
+    }
+
+    document.getElementById('update-api-form').addEventListener('submit', async function(event) {
+      event.preventDefault();
+
+      const formData = {
+        name: document.getElementById('name').value,
+        description: document.getElementById('description').value
+      };
+
+      const id = document.getElementById('api-id').value;
+      const token = await getJwt();
+
+      fetch('/api/v1/items/' + id, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(formData)
+      })
+      .then(res => {
+        if (!res.ok) throw new Error();
+        return res.json();
+      })
+      .then(() => alert('Data updated successfully'))
+      .catch(() => alert('Failed to update Data'));
+    });
+
+    document.getElementById('summarize-btn').addEventListener('click', async () => {
+      const id = document.getElementById('api-id').value;
+      if (!id) return alert('Please select an item first.');
+
+      try {
+        const res = await fetch(`/api/v1/items/${id}/summary`, {
+          method: 'POST'
+        });
+        const data = await res.json();
+        if (res.ok) {
+          document.getElementById('summary-text').innerText = data.summary;
+          document.getElementById('summary-box').style.display = 'block';
+        } else {
+          throw new Error(data.error || 'Summary failed');
+        }
+      } catch (err) {
+        alert('Failed to fetch summary: ' + err.message);
+      }
+    });
+  </script>
+</body>
+</html>
