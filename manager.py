@@ -19,7 +19,6 @@ app.config["MONGO_URI"]      = os.getenv("MONGO_URI")
 Swagger(app)
 jwt = JWTManager(app)
 mongo = PyMongo(app)
-ai   = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 apis = mongo.db.apis
 # ---------- UI ----------
 @app.route("/")
